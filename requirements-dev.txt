@@ -1,0 +1,7 @@
+aiohttp-devtools
+black
+flake8
+pylint
+pytest
+
+pytest-aiohttp

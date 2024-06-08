@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Avito AAA</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" >
+  </head>
+  <body>
+    <nav class="navbar bg-light">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <img src="/static/avito.svg" />
+        </a>
+      </div>
+    </nav>
+
+    <h4 class="display-1 text-center mb-4">Определение типа ремонта постройки(квартира/дом/коттедж)</h4>
+        <div class="container mb-3 col-8">
+            <form class="border border-2 p-3 rounded-4" method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="formFile" class="form-label">Вставьте сюда главное изображение объявления в формате .jpeg</label>
+                    <input class="form-control" type="file" accept="image/png, image/jpeg, image/jpg" name="image" id="formFile" multipart>
+                    <br/>
+                    <label for="description" class="form-label">Введите описание объявления</label>
+                    <input class="form-control" type="text" id="description" name="description"
+                    placeholder = "Лучшая на свете квартира, зуб даю" required/>
+                    <br/>
+                </div>
+                <button type="submit" class="btn btn-primary">Определить</button>
+            </form>
+        </div>
+
+    
+        {% if error and error_type %}
+        <div class="container col-8">
+            <div class="alert alert-danger" role="alert">
+                Тип ошибки: {{ error_type }}<br/>
+                Текст ошибки: {{ error }} <br/>
+                {{ desc }}
+                {{ shape }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if main_image %}
+        <div class="container text-center mb-3 col-8">
+            <img class="img-fluid rounded-3" src="{{ main_image }}"/>
+        </div>
+        {% endif %}
+
+        {% if user_description %}
+        <div class="container col-8">
+            <div class="alert alert-light" role="alert">
+                {{ user_description }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="container col-8">
+            {% if predictions %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Тип ремонта</th>
+                        <th scope="col">Точность</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prediction in predictions %}
+                        <tr>
+                            <td>{{ prediction.type }}</td>
+                            <td class="{% if prediction.confidence > 0.6 %}
+                                        table-success
+                                        {% else %}
+                                        table-warning
+                                        {% endif %}
+                                    ">
+                                {{ "%2.2f" | format(prediction.confidence * 100) }}%
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-center text-muted">Тут будет представлена таблица с типами ремонта и соответсвующими им вероятностями
+            </p>
+            {% endif %}
+        </div>
+
+    <footer class="container mt-5">
+        <p class="text-center text-muted">© 2024 Академия Аналитиков Авито</p>
+    </footer>
+    <script src="static/js/bootstrap.bundle.min.js" ></script>
+  </body>
+</html>
