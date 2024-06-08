@@ -1,12 +1,16 @@
+import os
 from io import BufferedReader, BytesIO
-import numpy as np
 from PIL import Image
+from base64 import b64encode
+import requests
+
+import numpy as np
+import pandas as pd
 import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from src.lib.config import Variables
-from base64 import b64encode
 import pymorphy3
+from src.lib.config import Variables
 
 
 def open_image(image_link: BufferedReader) -> np.array:
@@ -53,3 +57,80 @@ def convert_description_to_tokens(
     text_tokens_enc = [encode_mapping.get(token, Variables.NOT_IN_VOCAB)
                        for token in text_tokens_normal_form]
     return torch.tensor(text_tokens_enc).long()
+
+
+def get_html_avito(avito_url: str):
+    # r = requests.get(avito_url) ## локально не работает, поэтому закомментил
+    # html_text = r.text          ## локально не работает, поэтому закомментил
+
+    html_data = pd.read_csv("examples/urls_texts.csv")
+    if avito_url in set(html_data["url"]):
+        html_text = html_data.loc[html_data["url"] == avito_url, "text"].item()
+    else:
+        raise KeyError("Такого url нет в базе!")
+    return html_text
+
+
+def parse_html(html_text: str) -> tuple[str]:
+    image_url = parse_image_url(html_text)
+    image_path = download_image(image_url)
+
+    description = parse_description(html_text)
+    return image_path, description
+
+
+def parse_image_url(html_text: str) -> str:
+    # кусок, по которому выделяем нужный фрагмент с картинкой
+    req_fragment_marker = "image-frame-wrapper-_NvbY"
+    # кусок, указывающий, что дальше будет ссылка
+    req_url_marker = "data-url="
+
+    fragment = "".join([element for element in html_text.split("<div")
+                        if req_fragment_marker in element])
+    urls = [item.replace(req_url_marker, "").replace('"', "")
+            for item in fragment.split(" ") if req_url_marker in item]
+    if len(urls) != 1:
+        raise ValueError("Количество найденных ссылок с картинкой: "
+                         f"{len(urls)} (ожидается только одна)")
+
+    return urls[0]
+
+
+def download_image(image_url: str) -> str:
+    image_nm = image_url.split("/")[-1]
+
+    base_path = "data/images"
+    if not os.path.isdir(base_path):
+        os.makedirs(base_path)
+    image_path = f"{base_path}/{image_nm}"
+
+    # тут можно добавить ретраи (для mvp оставил так)
+    r = requests.get(image_url, stream=True)
+    if r.status_code == 200:
+        with open(image_path, "wb") as f:
+            for chunk in r:
+                f.write(chunk)
+    else:
+        raise ConnectionError("Не удалось загрузить изображение "
+                              f"(код ошибки: {r.status_code})")
+    return image_path
+
+
+def parse_description(html_text: str) -> str:
+    req_fragment_marker = "item-view/item-description"
+    fragment = "".join(
+        [element.replace(req_fragment_marker, "")
+            for element in html_text.split("<div")
+            if req_fragment_marker in element])
+
+    desc_start_marker = 'itemProp="description">'
+    pos = fragment.index(desc_start_marker)
+    desc = fragment[pos + len(desc_start_marker):]
+    desc = desc.replace("<br>", "\n")
+    desc = desc.replace("<p>", "\n")
+
+    replace_words = ["<div>", "</div>", "<br>", "</p>"]
+    for word in replace_words:
+        desc = desc.replace(word, "")
+
+    return desc
