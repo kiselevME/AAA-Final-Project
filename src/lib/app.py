@@ -29,7 +29,7 @@ async def recognize_renovation(request: web.Request) -> web.Response:
             image=image,
             user_description=user_description,
             request=request
-            )
+        )
         if int(post.get("returnProbasFlg", 0)):
             result_json = {predict["type"]: predict["confidence"]
                            for predict in predictions}

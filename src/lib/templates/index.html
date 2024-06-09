@@ -15,10 +15,14 @@
       </div>
     </nav>
 
-    <h4 class="display-1 text-center mb-4">Определение типа ремонта (квартира/дом/коттедж)</h4>
+    <h1 class="display-4 text-center mb-4">Определение типа ремонта (квартира/дом/коттедж)</h1>
         <div class="container mb-3 col-8">
             <form class="border border-2 p-3 rounded-4" method="POST" enctype="multipart/form-data">
                 <div class="mb-3">
+                    <label for="title" class="form-label">Введите заголовок объявления</label>
+                    <input class="form-control" type="text" id="title" name="title"
+                    placeholder = "1-к. квартира, 35,3 м², 4/12 эт." required/>
+                    <br/>
                     <label for="formFile" class="form-label">Вставьте сюда главное изображение объявления в формате .jpeg</label>
                     <input class="form-control" type="file" accept="image/png, image/jpeg, image/jpg" name="image" id="formFile" multipart>
                     <br/>
@@ -47,10 +51,16 @@
         {% if error and error_type %}
         <div class="container col-8">
             <div class="alert alert-danger" role="alert">
-                Тип ошибки: {{ error_type }}<br/>
-                Текст ошибки: {{ error }} <br/>
-                {{ desc }}
-                {{ shape }}
+                Возникла ошибка: {{ error_type }}<br/>
+                Описание: {{ error }} <br/>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if title %}
+        <div class="container col-8">
+            <div class="alert alert-primary" role="alert">
+                {{ title }}
             </div>
         </div>
         {% endif %}

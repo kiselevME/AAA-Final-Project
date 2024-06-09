@@ -46,9 +46,9 @@ def image_to_img_src(image: Image) -> str:
 
 
 def convert_description_to_tokens(
-        text: str,
-        tokenizer,
-        encode_mapping
+    text: str,
+    tokenizer,
+    encode_mapping
 ) -> np.array:
     morph = pymorphy3.MorphAnalyzer()
     text_tokens = tokenizer(text)
@@ -67,16 +67,35 @@ def get_html_avito(avito_url: str):
     if avito_url in set(html_data["url"]):
         html_text = html_data.loc[html_data["url"] == avito_url, "text"].item()
     else:
-        raise KeyError("Такого url нет в базе!")
+        raise KeyError("Введен недопустимый url")
     return html_text
 
 
 def parse_html(html_text: str) -> tuple[str]:
+    title = parse_title(html_text)
+
     image_url = parse_image_url(html_text)
     image_path = download_image(image_url)
 
     description = parse_description(html_text)
-    return image_path, description
+    return title, image_path, description
+
+
+def parse_title(html_text: str) -> str:
+    req_fragment_marker = "item-view/title-info"
+    fragment = "".join(
+        [element for element in html_text.split("<div")
+         if req_fragment_marker in element])
+
+    title_start_marker = 'data-marker="item-view/title-info">'
+    pos = fragment.index(title_start_marker)
+    title = fragment[pos + len(title_start_marker):]
+
+    replace_words = ["</h1>", "</div>"]
+    for word in replace_words:
+        title = title.replace(word, "")
+
+    return title
 
 
 def parse_image_url(html_text: str) -> str:
@@ -105,7 +124,7 @@ def download_image(image_url: str) -> str:
     image_path = f"{base_path}/{image_nm}"
 
     # тут можно добавить ретраи (для mvp оставил так)
-    r = requests.get(image_url, stream=True)
+    r = requests.get(image_url, stream=True, timeout=1)
     if r.status_code == 200:
         with open(image_path, "wb") as f:
             for chunk in r:
